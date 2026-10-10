@@ -10,6 +10,7 @@ import { spawn, spawnSync } from "node:child_process";
 export { probeSessionTerminal } from "./auto-heal.mjs";
 import { ensureOpencodeConfig } from "./opencode-config.mjs";
 import { classifyError } from "./errors.mjs";
+import { resolveOpencodeBinary } from "./process.mjs";
 
 const IS_WINDOWS = process.platform === "win32";
 const DEFAULT_PORT = 4096;
@@ -125,11 +126,15 @@ export async function ensureServer(opts = {}) {
 
   // Start the server
   // Windows npm shims are .cmd/.ps1; spawn() only resolves those via a shell.
-  const proc = spawn("opencode", ["serve", "--port", String(port)], {
+  // A detached cmd.exe has no console, so the console app it launches opens a
+  // new window: spawn a real opencode.exe directly instead.
+  const bin = IS_WINDOWS ? await resolveOpencodeBinary() : null;
+  const useShell = IS_WINDOWS && !/\.exe$/i.test(bin ?? "");
+  const proc = spawn(useShell ? "opencode" : (bin ?? "opencode"), ["serve", "--port", String(port)], {
     stdio: ["ignore", "pipe", "pipe"],
     detached: true,
     cwd: opts.cwd,
-    shell: IS_WINDOWS,
+    shell: useShell,
     // A detached child on Windows gets its own console window unless hidden.
     windowsHide: true,
   });
