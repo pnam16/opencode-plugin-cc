@@ -130,6 +130,8 @@ export async function ensureServer(opts = {}) {
     detached: true,
     cwd: opts.cwd,
     shell: IS_WINDOWS,
+    // A detached child on Windows gets its own console window unless hidden.
+    windowsHide: true,
   });
   proc.unref();
 
