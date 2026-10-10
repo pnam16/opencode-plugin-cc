@@ -82,14 +82,20 @@ export function runCommand(cmd, args, opts = {}) {
  */
 export function spawnDetached(cmd, args, opts = {}) {
   const logFd = opts.logFile ? fs.openSync(opts.logFile, "a") : null;
+  // `node` is the binary already running, so spawn it by path with no shell.
+  // A Windows shell joins args unquoted: a multi-word --task-text reached the
+  // worker as its first word only.
+  const isNode = cmd === "node";
   let child;
   try {
-    child = spawn(cmd, args, {
+    child = spawn(isNode ? process.execPath : cmd, args, {
       stdio: logFd === null ? "ignore" : ["ignore", logFd, logFd],
       detached: true,
       cwd: opts.cwd,
       env: { ...process.env, ...opts.env },
-      shell: IS_WINDOWS,
+      shell: IS_WINDOWS && !isNode,
+      // A detached child on Windows gets its own console window unless hidden.
+      windowsHide: true,
     });
   } finally {
     if (logFd !== null) fs.closeSync(logFd);
