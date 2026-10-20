@@ -89,6 +89,8 @@ export function spawnDetached(cmd, args, opts = {}) {
     child = spawn(viaNode ? process.execPath : cmd, args, {
       stdio: logFd === null ? "ignore" : ["ignore", logFd, logFd],
       detached: true,
+      // A detached child gets its own console window on Windows unless hidden.
+      windowsHide: true,
       cwd: opts.cwd,
       env: { ...process.env, ...opts.env },
       shell: IS_WINDOWS && !viaNode,
